@@ -1,0 +1,20 @@
+
+# le but est de creer un utilisateur administrateur du serveur matrix
+
+# exemple de parametrage
+# ......................
+# hostname du rpi esclave:        rpisol02
+# nom de l'admin :                adminatrix
+# mot de passe de l'admin :       matrixadm
+
+# les 2 facons de creer un utilisateur sont decrites par pantaleev ici :
+# https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/registering-users.md
+
+
+putty/ssh rpisol02
+
+  # ##################################################################
+  # choisissez votre nom d'administrateur ainsi que votre mot de passe
+  # ##################################################################
+  # creation du compte admin :
+  matrix-synapse-register-user adminatrix matrixadm 1

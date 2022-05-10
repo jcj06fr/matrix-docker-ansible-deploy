@@ -1,0 +1,120 @@
+
+# le but est d'ajouter dans les DNS les nouvelles entrees du serveur matrix
+# c.a.d. des services qui seront installes sur l'ordinateur esclave
+# et de s'assurer que les futurs acces utilisateurs seront bien delivres
+# a l'ordinateur esclave/serveur
+
+# exemple de parametrage
+# ......................
+# hostname du rpi esclave:                rpisol02
+# nom de domaine du rpi esclave:          solaris.com
+# adresse publique IP de la box internet: 1.2.3.4
+# adresse IP privee du rpi:               192.168.1.129
+
+# par rapport a la cible actuelle de la config pantaleev, on n'installera
+# que 2 services qui auront une visibilite depuis l'exterieur :
+# - matrix (pour la partie serveur)
+# - element (pour avoir une interface web cliente de ce serveur)
+# dans l'exemple les utilisateurs accederont aux url :
+# matrix.rpisol02.solaris.com
+# element.rpisol02.solaris.com
+# ############################################################################
+# faites attention a l'url (hostname et nom de domaine) que vous allez choisir
+# ############################################################################
+
+# les phases d'install de ce document sont decrites par pantaleev ici :
+# https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/configuring-dns.md
+
+
+A - RECHERCHE DE L'IP EXTERNE DE LA BOX
+---------------------------------------
+
+https://www.mon-ip.com/ -> 1.2.3.4
+
+
+B - AJOUT DES ENTREES DNS
+-------------------------
+
+  B-1 DNS CHEZ OVH
+  ................
+
+# creation des entrees DNS
+https://www.ovh.com/manager
+  noms de domaine -> solaris.com
+    ajouter une entree
+      A
+        sous-domaine: matrix.rpisol02.solaris.com
+        cible: 1.2.3.4
+        suivant
+          valider
+    ajouter une entree
+      CNAME
+        sous-domaine: element.rpisol02.solaris.com
+        cible: matrix.rpisol02.solaris.com
+          valider
+
+# verifications sur un pc perso
+ping matrix.rpisol02.solaris.com -> 1.2.3.4 -> ok
+ping element.rpisol02.solaris.com -> 1.2.3.4 -> ok
+
+
+C - AJOUT DE REDIRECTIONS SUR LA BOX
+------------------------------------
+
+# pour que les utilisateurs puissent acceder ulterieurement au serveur matrix,
+# la box doit retransmettre les requetes provenant de l'exterieur vers
+# l'adresse IP privee de l'ordinateur esclave/serveur
+# sur les 2 ports web (TCP:80 pour le http et TCP:443 pour le https)
+
+# les redirections doivent etre operationnelles lors de l'installation
+# du serveur matrix car l'ordinateur maitre y accede via la future url,
+# donc via l'IP publique de la box
+#
+# de plus, lors de cette installation, l'ordinateur maitre pilote l'ordinateur
+# esclave via une connexion ssh, toujours via l'url, donc via l'IP publique
+# de la box, d'ou une 3eme redirection necessaire sur le port ssh (TCP:22)
+#
+# ######################################################################
+# potentiellement l'ouverture du port ssh peut mener a un piratage de
+# l'ordinateur esclave donc il est conseille de parametrer une ouverture
+# de session ssh par un systeme de cles privee/publique
+# (voir le fichier 06a-ssh-vers-esclave.txt)
+# c'est pour cela que l'on installe l'O.S. avec la commande logwatch
+# qui envoie tous les jours son compte-rendu de supervision par mail
+# (voir le 01-install-os-maitre)
+# ######################################################################
+
+  C-1 SUR FREEBOX
+  ...............
+
+http://mafreebox.freebox.fr
+  parametres de la freebox -> gestion des ports
+    -> ajouter une redirection
+      IP destination: 192.168.1.129
+      IP source: Toutes
+      Protocole: TCP
+      Port de debut: 80
+      Port de fin: 80
+      Port de destination: 80
+        sauvegarder
+    -> ajouter une redirection
+      IP destination: 192.168.1.129
+      IP source: Toutes
+      Protocole: TCP
+      Port de debut: 443
+      Port de fin: 443
+      Port de destination: 443
+        sauvegarder
+    -> ajouter une redirection
+      IP destination: 192.168.1.129
+      IP source: Toutes
+      Protocole: TCP
+      Port de debut: 22
+      Port de fin: 22
+      Port de destination: 22
+        sauvegarder
+
+# ##############################################################
+# enlever l'ouverture du port 22 apres l'installation du serveur
+# (voir le dossier 09-installation-serveur)
+# ##############################################################

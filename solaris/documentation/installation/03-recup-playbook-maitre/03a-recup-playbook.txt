@@ -1,0 +1,24 @@
+
+# le but est de recuperer le playbook de pantaleev, c.a.d. tout son dossier git
+# sur l'ordinateur maitre de type debian et avec ansible deja installe
+
+# l'ordinateur maitre est un rpi avec un O.S. raspbian
+
+# exemple de parametrage
+# ......................
+# hostname du rpi maitre:        rpisol01
+# dossier du playbook pantaleev: ansible-playbook
+
+# les phases d'install de ce document sont decrites par pantaleev ici :
+# https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/getting-the-playbook.md
+
+
+putty/ssh rpisol01
+
+  # creation d'un dossier specifique
+  mkdir ansible-playbook
+  cd ansible-playbook
+
+  # recuperation du playbook par clonage du depot git
+  git clone https://github.com/spantaleev/matrix-docker-ansible-deploy.git
+    -> creation du sous-dossier matrix-docker-ansible-deploy et de son contenu

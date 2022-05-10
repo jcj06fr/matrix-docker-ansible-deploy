@@ -1,0 +1,74 @@
+
+# le but est d'installer le paquetage docker et ses petits sur l'ordinateur
+# esclave pour qu'il puisse faire tourner toutes les images docker
+# necessaires a la configuration matrix choisie
+
+# l'ordinateur esclave est un rpi avec un O.S. raspbian
+
+# exemple de parametrage
+# ......................
+# hostname du rpi esclave:          rpisol02
+# dossier pour le paquetage docker: mondocker
+
+# les phases d'install de ce document sont decrites ici :
+# cf https://www.framboise314.fr/installer-docker-sur-raspberry-pi
+
+
+A - INSTALL DOCKER AND CO
+-------------------------
+
+putty/ssh rpisol02
+
+  # maj de l'O.S.
+  sudo apt-get update
+  sudo apt-get upgrade
+
+  # creation du dossier de travail docker
+  mkdir mondocker
+  cd mondocker
+
+  # recup du script d'install docker
+  curl -fsSL https://get.docker.com -o get-docker.sh
+  ls -> get-docker.sh -> ok
+
+  # verif que docker n'est pas deja installe
+  dpkg-query -l | grep docker -> rien -> ok
+
+  # install docker
+  sudo sh ./get-docker.sh -> ok
+
+  # verif de la version
+  docker --version -> 20.10.13 -> ok
+
+  # on avait trouve quelque part (?) le conseil d'executer la commande :
+  # dockerd-rootless-setuptool.sh install
+  # mais on la garde sous le coude pour l'instant
+
+  # verif des paquetages installes
+  dpkg-query -l | grep docker
+    -> docker-ce + docker-ce-cli + docker-ce-rootless-extras
+
+  # ajout du user pi dans le groupe docker
+  sudo usermod -aG docker pi
+
+
+B - TEST DOCKER EN VRAI
+-----------------------
+
+  # on se reloggue pour prendre en compte le nouveau groupe du user pi
+  exit
+putty/ssh rpisol02
+
+  # test de l'image helloworld
+  docker run hello-world -> ok
+
+  # nettoyage de l'image helloworld
+  docker ps -a -> container_id: d3dbf40f1e0f
+  docker rm d3dbf40f1e0f
+  docker rmi hello-world
+
+
+C - PAS DE DOCKER-COMPOSE
+-------------------------
+
+# on n'installe pas docker-compose car pas requis pour la config pantaleev

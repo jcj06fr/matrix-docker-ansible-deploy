@@ -1,0 +1,29 @@
+
+La configuration Ansible necessite 2 ordinateurs : 1 maitre et 1 esclave.
+
+Le maitre va recevoir le clone du depot git et executer Ansible pour piloter
+l'installation de l'esclave en serveur matrix-synapse.
+
+L'esclave va executer plusieurs images docker pour assurer la fonction
+de serveur.
+
+Les utilisateurs ne connaitront et n'accederont qu'a l'ordinateur esclave.
+
+Le maitre doit piloter l'execution a distance de commandes sur l'esclave.
+Pour ce faire, on doit configurer une liaison ssh du maitre vers l'esclave
+soit avec un user et mot de passe soit avec un couple de cles privee/publique.
+
+Les architectures et/ou O.S. du maitre et de l'esclave n'ont pas besoin
+d'etre identiques, mais ils doivent etre de type Linux.
+
+Les architectures prevues pour l'esclave/serveur sont :
+- micro-ordinateur de type raspberry,
+- ordinateur Intel ou AMD,
+- machine virtuelle chez un hebergeur Cloud.
+
+Pour simplifier le travail, on choisit la meme distribution pour toutes
+les plateformes, a savoir debian (raspbian pour les raspberry).
+
+Il est possible que le maitre et l'esclave/serveur ne soient qu'une seule
+machine mais on le deconseille pour isoler les problemes et pouvoir
+reinstaller complement le serveur sans impacter le maitre.

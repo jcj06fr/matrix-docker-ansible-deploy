@@ -1,0 +1,25 @@
+
+# le but est de tester la connexion de l'administrateur au serveur
+
+# exemple de parametrage
+# ......................
+# hostname du rpi esclave:        rpisol02
+# nom de domaine du rpi esclave:  solaris.com
+# nom de l'admin :                adminatrix
+# mot de passe de l'admin :       matrixadm
+
+# ###########
+# A COMPLETER
+# ###########
+
+
+A - VIA LE PORTAIL ELEMENT
+--------------------------
+
+https://element.rpisol02.solaris.com
+
+
+B - VIA L'APPLI ELEMENT
+-----------------------
+
+

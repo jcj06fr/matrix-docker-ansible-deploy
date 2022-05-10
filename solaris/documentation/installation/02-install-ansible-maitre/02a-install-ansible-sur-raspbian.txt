@@ -1,0 +1,35 @@
+
+# le but est d'installer le paquetage ansible et ses petits sur l'ordinateur maitre
+# pour qu'il puisse piloter l'ordinateur esclave/serveur matrix
+
+# l'ordinateur maitre est un rpi avec un O.S. raspbian
+
+# exemple de parametrage
+# .....................
+# hostname du rpi maitre: rpisol01
+
+# les phases d'install de ce document sont decrites par pantaleev ici :
+# https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/prerequisites.md
+
+
+A - PREREQUIS
+-------------
+
+putty/ssh rpisol01
+
+  # prerequisites
+  python --version -> 3.9.2 -> c'est bien du python3 -> ok
+
+
+B - INSTALL ANSIBLE
+-------------------
+
+  # mise a jour de l'OS
+  sudo apt update
+  sudo apt upgrade -> 125 Mo
+
+  # install ansible
+  sudo apt install ansible -> 278 Mo
+
+  # test de la version ansible
+  ansible --version -> 2.10.8 -> c'est bien superieur a la version 2.7.1 -> ok

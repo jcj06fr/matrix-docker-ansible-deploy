@@ -1,0 +1,144 @@
+
+# le but est d'installer le serveur sur l'ordinateur esclave, en etant pilote
+# depuis l'ordinateur maitre (c'est le but d'ansible)
+
+# exemple de parametrage
+# ......................
+# hostname du rpi maitre:        rpisol01
+# hostname du rpi esclave:       rpisol02
+# nom de domaine du rpi esclave: solaris.com
+# dossier du playbook pantaleev: ansible-playbook
+
+# les phases de configuration de ce document sont decrites par pantaleev ici :
+# https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/installing.md
+
+
+A - VERIFICATIONS PREALABLES
+----------------------------
+
+  A-1 ordinateur maitre
+  .....................
+
+putty/ssh rpisol01
+
+  # DNS correct et IP ordinateur esclave/serveur (box) atteignable
+  ping rpisol02.solaris.com -> ok
+  ping matrix.rpisol02.solaris.com -> ok
+  ping element.rpisol02.solaris.com -> ok
+
+  # redirection du port 22 (ssh) vers l'ordinateur esclave
+  ssh/putty pi@rpisol02.solaris.com
+    -> Passphrase for key "rsa-key-XXXXXXXX": Ceci est ma passphrase de protection 12345*$
+    -> ouverture de la session
+
+  # redirection du port 80 vers l'ordinateur esclave
+  telnet matrix.rpisol02.solaris.com 80
+    -> doit repondre :
+Connected to matrix.rpisol02.solaris.com.
+Escape character is '^]'.
+      -> tuer la commande par control-C
+
+  # redirection du port 443 vers l'ordinateur esclave
+  telnet matrix.rpisol02.solaris.com 443
+    -> doit repondre :
+Connected to matrix.rpisol02.solaris.com.
+Escape character is '^]'.
+      -> tuer la commande par control-C
+
+
+  A-2 ordinateur esclave
+  ......................
+
+putty/ssh rpisol02
+
+  # docker est operationnel
+  docker --version -> ok
+
+  # le cas ideal :
+  docker images
+    -> ne retourne rien
+
+    A-2-1 dans le cas ou une precedente installation a eu lieu
+    ..........................................................
+
+  # si vous voulez refaire une installation matrix qui a deja abouti, le plus
+  # plus sur, c'est de supprimer toutes les anciennes images pour revenir
+  # a l'etat initial ; pour ce faire :
+
+  # d'abord arreter l'ancien serveur matrix :
+  cd ansible-playbook/matrix-docker-ansible-deploy
+  ansible-playbook -i inventory/hosts setup.yml --tags=stop --ask-become-pass
+
+  # puis supprimer toutes les images :
+
+    # . liste des images :
+    docker images -> 3eme colonne IMAGE_ID, par exemple : 820417868176
+
+    # . suppression de l'image exemple :
+    docker rmi 820417868176
+
+    # . recommencer pour toutes les images
+
+    # . il se peut que l'image nginx pose probleme, avec le message :
+Error response from daemon: conflict: unable to delete xxxxxxxxxxxx (must be forced) - image is referenced in multiple repositories
+    #   auquel cas on execute plutot la commande :
+    docker rmi -f XXXXXXXXXXXX
+
+
+    A-2-2 pour supprimer d'autres images docker
+    ...........................................
+
+  # . liste des images :
+  docker images -> 3eme colonne IMAGE_ID, par exemple : d17025d71df5
+
+  # . suppression de l'image exemple :
+  docker rmi d17025d71df5
+    -> si jamais il y a le message d'erreur suivant :
+Error response from daemon: conflict: unable to delete d17025d71df5 (cannot be forced) - image is being used by running container 39853221f565
+    # on doit arreter le container associe :
+    docker stop 39853221f565
+    # puis relancer la suppression de l'image :
+    docker rmi d17025d71df5
+
+
+B - INSTALLATION
+----------------
+
+# elle se fait depuis l'ordinateur maitre
+putty/ssh rpisol01
+
+  # aller dans le bon dossier
+  cd ansible-playbook/matrix-docker-ansible-deploy
+
+  # lancement de l'installation du serveur
+  ansible-playbook -i inventory/hosts setup.yml --tags=setup-all --ask-become-pass
+    -> prend beaucoup de temps et affiche plein de lignes jusqu'a la derniere :
+       ... ok=238 changed=42 skipped=1768
+
+  # demarrage du serveur
+  ansible-playbook -i inventory/hosts setup.yml --tags=start --ask-become-pass
+    -> prend un petit moment et affiche plein de lignes jusqu'a la derniere :
+       ... ok=22 changed=2 skipped=181 -> ok
+
+  # pour le moment, le test des services de la doc est en erreur
+  ansible-playbook -i inventory/hosts setup.yml --tags=self-check --ask-become-pass
+  ... -> ko (Hostname mismatch, certificate is not valid for ''rpisol02.solaris.com''
+           + checked endpoint: `https://rpisol02.solaris.com/.well-known/matrix/client)
+
+  # on peut tester le service (au sens linux) matrix
+  sudo systemctl status matrix-nginx-proxy
+    -> loaded + enables + active
+
+
+C - SECURISATION DE L'ORDINATEUR ESCLAVE
+----------------------------------------
+
+# enlever la redirection du port 22 vers l'ordinateur esclave
+
+  C-1 SUR FREEBOX
+  ...............
+
+http://mafreebox.freebox.fr
+  parametres de la freebox -> gestion des ports
+    cliquer sur la poubelle associee a la redirection du port 22
+      oui

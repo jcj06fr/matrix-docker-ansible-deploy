@@ -1,0 +1,325 @@
+
+# le but est d'avoir un rpi avec un O.S. a jour et qu'il envoie automatiquement
+# un mail de supervision de son systeme vers le mel d'un administrateur
+
+# exemple de parametrage
+# ......................
+# mot de passe du user pi:                passwordpi
+# hostname du rpi:                        rpisol01
+# nom de domaine du rpi:                  solaris.com
+# mel administrateur:                     admin@admin.com
+# compte mel OVH:                         mail@mondomaine.com
+# mot de passe compte mel OVH:            monmotdepasse
+# adresse IP publique de la box internet: 1.2.3.4
+# adresse MAC du rpi:                     12:34:56:78:9A:BC
+# adresse IP privee du rpi:               192.168.1.128
+
+
+A - INITIALISATION CARTE SD
+---------------------------
+
+  A-1 DEPUIS UN WINDOWS
+  .....................
+
+# telechargement du programme d'installation
+https://www.raspberrypi.com/software/
+  download for windows
+
+# lancement du programme d'initialisation
+# vers une carte SD 64 Go
+Raspberry Pi Imager
+  systeme d'exploitation: Raspberry Pi OS Lite (64-bit)
+  stockage: SD 64 Go
+  ecrire
+    oui
+      ...
+        continuer
+ejecter la carte SD
+
+# pour eviter de brancher ecran/clavier/souris sur le rpi, on va gagner
+# une etape et autoriser tout de suite l'acces ssh
+# inserer la carte SD dans le pc windows -> elle apparait sous le lecteur L:
+explorateur de fichiers
+  L: (boot)
+    nouveau fichier texte -> ssh
+      eject
+
+
+B - CONFIG DE BASE
+------------------
+
+# inserer la carte SD dans le rpi, cabler le reseau et demarrer
+
+  B-1 FIXER L'ADRESSE IP DU RPI
+  .............................
+
+# trouver l'adresse MAC du rpi (dependant de votre config)
+# exemple: 12:34:56:78:9A:BC
+
+
+    B-1-1 SUR FREEBOX
+    .................
+
+http://mafreebox.freebox.fr
+  parametres de la freebox -> dhcp -> baux statiques
+    -> ajouter un bail DHCP statique
+      adresse MAC: 12:34:56:78:9A:BC
+      adresse IP: 192.168.1.128
+      sauvegarder
+
+
+  B-2 PARAMETRAGE DES LANGUES
+  ...........................
+
+# rebooter le rpi par off/on
+
+# s'y connecter en ssh
+# - depuis Windows
+putty 192.168.1.128
+# - depuis Linux
+ssh 192.168.1.128
+# - dans les deux cas
+login: pi
+mot de passe: raspberry
+
+# config des langues
+sudo raspi-config
+  5 localisation options
+    L1 change locale
+      [*] All locales + ok
+      fr_FR.UTF-8 + ok
+        ... (tres longtemps)
+  5 localisation options
+    L3 keyboard + ok
+    ok
+    autre
+      francais + ok
+        francais - francais (azerty) + ok
+          disposition par defaut pour le clavier + ok
+            touche alt de droite (altgr) + ok	
+  finish
+
+# verification que la modif n'est pas encore prise en compte
+echo $LANG -> en_GB.UTF-8
+
+# on reboote pour prendre en compte la modif
+sudo reboot
+
+
+  B-3 MISE A JOUR DE L'OS
+  .......................
+
+putty/ssh 192.168.1.128
+
+  # verification de la modif des langues
+  echo $LANG -> fr_FR.UTF-8 -> ok
+
+  # mise a jour
+  sudo apt update
+  sudo apt upgrade -y
+
+  # reboot pour utiliser le nouveau noyau linux
+  sudo reboot
+
+
+  B-4 RENOMMAGE DU RPI
+  ....................
+
+putty/ssh 192.168.1.128
+
+  # renommage rpi en rpisol01
+  sudo raspi-config
+    1 system options
+      S4 hostname
+        ok
+          rpisol01
+          ok
+            finish
+
+
+  B-5 CHANGEMENT DU MOT DE PASSE DU USER PI
+  .........................................
+
+  # ###################################################
+  # dans l'exemple: passwordpi MAIS CHOISISSEZ LE VOTRE
+  # ###################################################
+  sudo raspi-config
+    1 system options
+      S3 password
+        ok
+          passwordpi
+          passwordpi
+          ok
+            finish
+              ok (reboot)
+
+
+C - MEL DE SUPERVISION DU SYSTEME
+---------------------------------
+
+  C-1 ENVOI DE MAIL
+  .................
+
+# pour que le rpi soit reconnu par le serveur smtp, il doit etre declare
+# dans les DNS avec un nom complet (hostname + nom de domaine)
+
+    C-1-1 RECHERCHE DE L'IP EXTERNE DE LA BOX
+    .........................................
+
+https://www.mon-ip.com/ -> 1.2.3.4
+
+
+    C-1-1 PARAMETRAGE DNS CHEZ OVH
+    ..............................
+
+# creation d'une entree DNS
+https://www.ovh.com/manager
+  noms de domaine -> solaris.com
+    ajouter une entree
+      A
+        sous-domaine: rpisol01.solaris.com
+        cible: 1.2.3.4
+        suivant
+          valider
+
+# verification sur un pc perso
+ping rpisol01.solaris.com -> 1.2.3.4 -> ok
+
+    C-1-2 ENVOI MAIL DIRECT PAR EXIM
+    ................................
+
+putty/ssh 192.168.1.128
+
+# configuration exim4 (envoi de mail)
+sudo dpkg-reconfigure exim4-config
+  ok
+    distribution directe par SMTP (site internet) + ok
+    ok
+    ok
+    ok
+    ok
+    ok
+    ok
+    ok
+    oui (minimiser les requetes)
+    ok (format mbox)
+    non
+    ok
+    admin@admin.com + ok
+      -> warning : hostname --fqdn did not return a fully qualified name,
+
+# warning car le hostname n'a pas de nom de domaine, on va le changer
+sudo hostnamectl set-hostname rpisol01.solaris.com
+hostnamectl -> ok
+
+# test envoi mail
+echo test1 | mail -s test1 admin@admin.com -> ko
+
+# on refait la config exim4 avec le nouveau nom d'hote
+sudo dpkg-reconfigure exim4-config
+  ok
+    distribution directe par SMTP (site internet) + ok
+    ok
+    ok
+    solaris.com + ok
+    ok
+    ok
+    rien + ok
+    ok
+    ok
+    oui (minimiser les requetes)
+    ok (format mbox)
+    non
+
+# test envoi mail
+echo test2 | mail -s test2 admin@admin.com -> ko
+
+# recherche dans les logs
+sudo vi /var/log/exim4/mainlog -> rien de special
+
+# ##################################################
+# SI QUELQU'UN SAIT POURQUOI CELA NE FONCTIONNE PAS,
+# MERCI DE PROPOSER UNE SOLUTION
+# ##################################################
+
+# en attendant, on va installer et utiliser le paquetage ssmtp
+
+
+    C-1-3 ENVOI MAIL VERS UN SERVEUR SMTP OVH PAR SSMTP
+    ...................................................
+
+# install du nouvel outil de mail
+sudo apt-get install ssmtp -y
+
+# menage dans les paquetages
+sudo apt autoremove
+
+# parametrage de ssmtp
+sudo bash
+  cd /etc/ssmtp/
+  cp ssmtp.conf ssmtp.conf.orig.SOL
+  vi ssmtp.conf
+    # faire les modifs detectees ci-apres
+    :wq
+  diff ssmtp.conf.orig.SOL ssmtp.conf
+10c10
+< mailhub=mail
+---
+> mailhub=ssl0.ovh.net:587
+21a22,26
+> AuthUser=mail@mondomaine.com
+> AuthPass=monmotdepasse
+> FromLineOverride=YES
+> UseSTARTTLS=YES
+  exit
+
+# test envoi mail
+echo test3 | mail -s test3 admin@admin.com -> ko
+
+
+  C-2 SUPERVISION PAR LA COMMANDE LOGWATCH
+  ........................................
+
+# utilisation de la commande logwatch pour superviser le systeme
+
+# install logwatch
+sudo apt-get update
+sudo apt-get install logwatch -y
+
+# parametrage de logwatch pour envoyer son resultat par mail
+cd /usr/share/logwatch/default.conf
+sudo cp -p logwatch.conf logwatch.conf.orig.SOL
+sudo vi logwatch.conf
+  # faire les modifs detectees ci-apres
+diff logwatch.conf.orig.SOL logwatch.conf
+31c31
+< Output = stdout
+---
+> Output = mail
+50c50
+< MailTo = root
+---
+> MailTo = admin@admin.com
+
+# verif initiale
+sudo logwatch --mailto=admin@admin.com
+  -> envoie bien le mail de supervision -> ok
+
+# normalement, on devrait garder le destinaire root du mail de logwatch
+# et modifier l'alias root pour envoyer vers admin@admin.com
+# sauf que la commande 'sudo newaliases' envoie le warning
+  -> Aliases are not used in sSMTP
+# donc on en reste la
+
+# et on attend le lendemain matin pour verifier que logwatch envoie
+# bien le resultat de sa supervision vers le compte mail
+# ...
+# c'est bien ce qui se passe donc l'installation raspbian est finie
+
+
+D - AJOUT DE PAQUETAGES
+-----------------------
+
+# generation aleatoire de mot de passe (pour la phase 08-config-playbook-maitre)
+sudo apt install pwgen
+

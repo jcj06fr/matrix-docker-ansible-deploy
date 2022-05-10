@@ -1,0 +1,12 @@
+
+# le but est d'avoir un rpi avec un O.S. a jour et qu'il envoie automatiquement
+# un mail de supervision de son systeme vers le mel d'un administrateur
+
+# exemple de parametrage
+# ......................
+# hostname du rpi:          rpisol02
+# adresse MAC du rpi:       34:56:78:9A:BC:DE
+# adresse IP privee du rpi: 192.168.1.129
+
+# suivre les instructions decrites dans le fichier 01a-install-raspberry-raspbian.txt
+# avec le nouveau parametrage
