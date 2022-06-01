@@ -1,0 +1,245 @@
+
+# le but est que l'ordinateur maitre puisse se connecter automatiquement
+# en ssh vers l'ordinateur esclave sans avoir besoin qu'un humain saisisse
+# manuellement un mot de passe
+#
+# lors de certaines phases, comme l'installation du serveur (voir la phase
+# 07a-config-dns), l'acces ssh doit etre ouvert depuis l'exterieur
+# pour eviter un piratage, il est conseille de supprimer l'access ssh
+# en interactif
+
+# pour conserver un acces ssh depuis le pc perso, cela implique que le pc perso
+# puisse aussi se connecter a l'ordinateur esclave sans mot de passe
+
+#
+# une consequence de cette configuration sera une augmentation de la securite
+# des acces a l'ordinateur esclave/serveur, car le port ssh devra etre ouvert
+# depuis l'exterieur au moment de l'installation du serveur
+# (voir la phase 07a-config-dns)
+
+# exemple de parametrage
+# ......................
+# nom complet user du pc maitre:             Admin Matrix Solaris B
+# login user du pc maitre:                   soladmin
+# mot de passe user du pc maitre:            passworduserb
+# hostname du pc maitre:                     pcsol06b
+# hostname du pc esclave:                    pcsol06a
+# adresse IP privee du pc esclave:           192.168.1.131
+# hostname du pc perso:                      monpcperso
+# passphrase de protection de la cle privee: Ceci est ma passphrase de protection 12345*$
+# dossier de stockage de la cle privee:      C:\Users\moimeme\AppData\Local\PuTTY
+# nom de la cle privee:                      adminpc.ppk
+# nom de la cle publique:                    adminpc.pub
+# nom de la session d'acces PuTTY:           pcsol06a-auto
+
+
+A - ACCES SSH DEPUIS L'ORDINATEUR MAITRE
+----------------------------------------
+
+# sur pcsol01b
+
+Admin Matrix Solaris B
+Mot de passe: passworduserb
+
+  activites
+    loupe: terminal
+      -> ouvre un terminal pour utiliser le mode commande en ligne
+
+  # generation d'un couple de cles privee et publique, sans proteger la cle
+  # privee par un mot de passe (car la cle privee sera utilisee par des
+  # programmes et pas par un humain)
+  ssh-keygen -t rsa -b 4096
+    [Entree]
+    [Entree]
+    [Entree]
+
+  # verification des 2 fichiers : cle privee et publique
+  ls -l /home/soladmin/.ssh/id_rsa /home/soladmin/.ssh/id_rsa.pub -> ok
+
+  # declaration de l'ordinateur esclave
+  cd /etc
+  sudo cp -p hosts hosts.orig.SOL
+  sudo vi hosts
+    # ajout de la ligne :
+    192.168.1.131 pcsol06a
+    :wq
+
+  # test
+  ping pcsol06a -> ok
+  # initialisation ssh
+  ssh pcsol06a
+    passwordusera
+      exit
+
+  # envoi de la cle publique sur l'ordinateur esclave, en 2 fois
+  ssh-copy-id soladmin@pcsol06a
+    passwordusera
+
+  # test d'acces sans demande de mot de passe
+  ssh pcsol06a -> ok
+
+
+B - ACCES SSH DEPUIS LE PC PERSO
+--------------------------------
+
+# comme l'acces doit se faire par un humain, il est conseille de proteger
+# la cle privee par un mot de passe
+#
+# sur un pc perso linux, il serait possible d'utiliser la meme cle privee
+# que sur l'ordinateur maitre mais, comme sur ce dernier, on est oblige
+# d'enlever le mot de passe, la protection serait illusoire
+#
+# donc le conseil est de generer un nouveau couple de cles privee et publique,
+# en protegeant la cle privee par un mot de passe
+
+  B-1 PC PERSO WINDOWS
+  ....................
+
+# les phases d'install sont decrites ici :
+# https://raspberry-lab.fr/Configuration/Connexion-en-ssh-sans-login-ni-mot-de-passe-sur-Raspberry-Pi/
+
+    B-1-1 GENERATION ET CONFIGURATION DES CLES
+    ..........................................
+
+# installer le logiciel PuTTY
+# depuis la page : https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html
+# et choisir la version prevue pour votre PC (en general le MSI 64-bit x86)
+
+# generer le couple de cles privee/publique avec passphrase
+# ############################################################
+# dans l'exemple: Ceci est ma passphrase de protection 12345*$
+# MAIS CHOISISSEZ LA VOTRE
+# ############################################################
+PuTTYgen
+  Number of bits in a generated key: 4096
+    Generate
+      deplacer la souris sur la fenetre PuTTYgen
+        -> genere le couple de cles
+  Key comment: soladmin@monpcperso
+  Key passphrase: Ceci est ma passphrase de protection 12345*$
+  Confirm passphrase: Ceci est ma passphrase de protection 12345*$
+
+# sauvegarde de la cle privee en local dans un dossier personnel
+# par exemple en creant un dossier ici : C:\Users\moimeme\AppData\Local\PuTTY
+# et par exemple en appelant ce fichier: adminpc.ppk
+# (l'extension .ppk est obligatoire)
+
+# sauvegarde de la cle publique au meme endroit (pour plus tard)
+# par exemple en tant que fichier : C:\Users\moimeme\AppData\Local\PuTTY\adminpc.pub
+# (l'extension .pub est juste pour memoire)
+
+# envoi de la cle publique sur l'ordinateur esclave/serveur
+# - copier entierement le texte affiche dans la partie
+# 'Public key for pasting into OpenSSH authorized_keys file:'
+  control-C (ssh-rsa *********** rsa-key-XXXXXXXX)
+# - ouvrir une session sur l'ordinateur esclave
+putty pcsol06a
+  # - aller dans le dossier prevu a cet effet
+  cd .ssh
+  # - coller la cle publique a la fin du fichier authorized_keys
+  echo "control-V" >> authorized_keys
+
+
+    B-1-2 CONFIGURATION DE L'ACCES AVEC CLE PRIVEE
+    ..............................................
+
+# creation de l'acces en donnant le chemin du fichier de cle privee
+PuTTY
+  Session
+    Host Name (or IP address): pcsol06a
+    Saved Sessions: pcsol06a-auto
+  Connection
+    Data
+      Auto-login username: soladmin
+  Connection
+    SSH
+      Auth
+        Private key file for authentication: C:\Users\moimeme\AppData\Local\PuTTY\adminpc.ppk
+  Session
+    Save
+
+# test de l'acces sans mot de passe
+PuTTY
+  Session
+    clic sur pcsol06a-auto
+      Open
+  -> ouvre une fenetre ssh/PuTTY
+  # demande de la passphrase
+  Passphrase for key "rsa-key-XXXXXXXX": Ceci est ma passphrase de protection 12345*$
+    -> ouverture de la session
+
+
+C - SUPPRESSION DE L'ACCES SSH AVEC MOT DE PASSE
+------------------------------------------------
+
+# ##########################################################################
+# ATTENTION
+# cette phase est necessaire pour proteger l'acces a votre serveur
+# mais vous devez bien vous rappeler la passphrase qui protege votre fichier
+# de cle privee sinon vous n'aurez plus acces a l'ordinateur esclave/serveur
+# depuis votre pc perso
+# ##########################################################################
+
+  C-1 SUPPRESSION
+  ...............
+
+# ouvrir une session sur l'ordinateur esclave
+ssh/putty pcsol06a-auto
+
+  # aller dans le bon dossier
+  cd /etc/ssh
+
+  # sauvegarder le fichier de config ssh avant modif
+  sudo cp -p sshd_config sshd_config.orig.SOL
+
+  # modifier le fichier de config
+  sudo vi sshd_config
+    # changer la ligne :
+#PasswordAuthentication yes
+    # en :
+PasswordAuthentication no
+
+  # relancer le serveur ssh
+  exit
+
+
+  # ne pas sortir de la session ssh/putty pour l'instant
+
+
+  C-2 VERIFICATIONS OBLIGATOIRES
+  ..............................
+
+    C-2-1 PC PERSO WINDOWS
+    ......................
+
+# verification que l'on n'a plus acces sans cle privee
+PuTTY
+  Session
+    Host Name (or IP address): pcsol06a
+      Open
+        login as: soladmin
+          -> doit afficher le message d'erreur :
+            No supported authentication methods available (server sent: publickey)
+
+# verification que l'on a toujours acces avec cle privee
+PuTTY
+  Session
+    clic sur pcsol06a-auto
+      Open
+  -> ouvre une fenetre ssh/PuTTY
+  # demande de la passphrase
+  Passphrase for key "rsa-key-XXXXXXXX": Ceci est ma passphrase de protection 12345*$
+    -> ouverture de la session
+
+
+  C-3 ARRET DE LA SESSION DU C-1
+  ------------------------------
+
+# si les verifications du C-2 sont bonnes, on peut terminer la session du C-1
+# sinon cette session servirait a corriger l'erreur ou a revenir a la
+# situation initiale
+
+# pour revenir a la situation initiale il faudrait executer les commandes :
+# cd /etc/ssh
+# sudo cp -p sshd_config.orig.SOL sshd_config
+# sudo systemctl restart sshd

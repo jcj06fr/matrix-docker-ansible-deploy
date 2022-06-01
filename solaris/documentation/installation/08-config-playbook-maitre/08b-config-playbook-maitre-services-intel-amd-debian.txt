@@ -1,0 +1,175 @@
+
+# le but est de configurer le playbook ansible sur l'ordinateur maitre
+# pour parametrer les services desires et uniquement ceux-la
+
+# la configuration par defaut, ainsi que la liste de tous les services
+# (1 service = 1 image docker) est decrite ici :
+# https://github.com/jcj06fr/matrix-docker-ansible-deploy/blob/master/docs/container-images.md
+
+# la liste des services a assurer pour la version 1.0 est minimale, a savoir
+
+# - dans la liste par defaut :
+matrixdotorg/synapse - the official Synapse Matrix homeserver (optional)
+vectorim/element-web - the Element web client (optional)
+postgres - the Postgres database server (optional)
+devture/exim-relay - the Exim email server (optional)
+nginx - the nginx web server (optional)
+certbot/certbot - the certbot tool for obtaining SSL certificates from
+                  Let's Encrypt (optional)
+
+# - dans les options :
+#   l'option suivante aide a parer aux inscriptions automatiques des bots
+zeratax/matrix-registration - matrix-registration: a simple python application
+                          to have a token based matrix registration (optional)
+#   l'option suivante aide a gerer les utilisateurs et les salons
+awesometechnologies/synapse-admin - the synapse-admin web UI tool for
+               administrating users and rooms on your Matrix server (optional)
+
+# - dans les options listees plus tard, a mettre en place dans un second temps
+#   borg backup - a full Matrix server backup solution, including the Postgres
+#                 database (optional)
+
+# exemple de parametrage
+# ......................
+# hostname du pc maitre:                                                        pcsol06b
+# hostname du pc esclave:                                                       pcsol06a
+# nom de domaine du pc esclave:                                                 solaris.com
+# adresse IP publique de la box internet:                                       1.2.3.4
+# dossier du playbook pantaleev:                                                ansible-playbook
+# mel de l'administrateur du nom de domaine pour la gestion avec Let's Encrypt: admin@solaris.com
+
+# les phases de configuration de ce document sont decrites par pantaleev ici :
+# https://github.com/jcj06fr/matrix-docker-ansible-deploy/blob/master/docs/configuring-playbook.md
+
+
+A - CREATION DES FICHIERS DE CONFIG SPECIFIQUES
+-----------------------------------------------
+
+# ouvrir un terminal sur l'ordinateur maitre (pcsol06b)
+
+  # aller dans le dossier du playbook
+  cd
+  cd ansible-playbook/matrix-docker-ansible-deploy
+
+  # ####################################################################
+  # dans la doc pantaleev, on parle du nom de domaine <your-domain> mais
+  # doit-on inclure aussi le hostname s'il y en a un comme dans notre
+  # exemple (pcsol06a.solaris.com) ou bien est-ce que la configuration
+  # pantaleev est prevue juste pour un nom de domaine (solaris.com) ?
+  # ####################################################################
+  # creer un dossier pour le nom de domaine de l'ordinateur esclave/serveur
+  mkdir inventory/host_vars/matrix.pcsol06a.solaris.com
+
+  # recopier le fichier de parametrage par defaut
+  cp examples/vars.yml inventory/host_vars/matrix.pcsol06a.solaris.com/vars.yml
+
+  # recopier le fichier hosts par defaut pour le serveur
+  cp examples/hosts inventory/hosts
+
+
+B - PARAMETRAGE GLOBAL DU SERVEUR
+---------------------------------
+
+  B-1 Reglages generaux
+  .....................
+
+  # generation d'un 1er fort mot de passe
+  pwgen -s 64 1
+    -> mIpFOPlrGEJfSd43TQ7Bnb0Vymr31RTuG8jlhYRTjX2HOsC8WFXRXYZXEvHVI943
+
+  # generation d'un deuxieme fort mot de passe
+  pwgen -s 64 1
+    -> YcJzPmifUHsMxLr0vlZko5Ms5nAOkrofeskZ419RXEOcR9RjTGG4CdVpYzR4UPh2
+
+  # generation d'un faible mot de passe
+  pwgen -s 16 1
+    -> IC4uGdHAUD9L7Jvm
+
+  # edition du fichier de parametrage
+  vi inventory/host_vars/matrix.pcsol06a.solaris.com/vars.yml
+
+    # remplacement de l'url du futur serveur matrix
+    matrix_domain: pcsol06a.solaris.com
+
+    # utilisation du 1er fort mot de passe pour le serveur global
+    matrix_homeserver_generic_secret_key: 'mIpFOPlrGEJfSd43TQ7Bnb0Vymr31RTuG8jlhYRTjX2HOsC8WFXRXYZXEvHVI943'
+
+    # ####################################################################
+    # DANS LE CAS STANDARD (UNE INSTALL ONE SHOT)
+    # mel de l'administrateur du nom de domaine pour recevoir les mels
+    # de let's encrypt
+    matrix_ssl_lets_encrypt_support_email: 'admin@solaris.com'
+    #
+    # SI VOUS VOULEZ FAIRE PLUSIEURS ESSAIS D'INSTALL
+    # let's encrypt limite le nombre de demandes de certificat SSL
+    # alors il vaut mieux utiliser des certificats auto-signes
+    # pendant les essais et let's encrypt pour la mise en prod
+    # donc on commente la ligne :
+    #matrix_ssl_lets_encrypt_support_email: ''
+    # et on ajoute celle-ci :
+    matrix_ssl_retrieval_method: self-signed
+    # ####################################################################
+
+    # utilisation du faible mot de passe pour l'administrateur du serveur postgresql
+    matrix_postgres_connection_password: 'IC4uGdHAUD9L7Jvm'
+
+    # ####################################################################
+    # OPTIONNEL : SI VOUS AVEZ UN PC SERVEUR PAS TRES PUISSANT
+    # on laisse le temps aux divers services de demarrer
+    matrix_common_after_systemd_service_start_wait_for_timeout_seconds: 30
+    # ####################################################################
+
+
+  B-2 SI L'ORDINATEUR ESCLAVE/SERVEUR EST UN RASPBERRY
+  ....................................................
+
+    # ajout de l'architecture materielle
+    matrix_architecture: "arm64"
+
+
+  B-3 DESACTIVATION DE SERVICES PAR DEFAUT
+  ----------------------------------------
+
+  # ajout de la desactivation des services par defaut que l'on ne veut pas
+  # en l'occurence Coturn (pas d'appel audio/video)
+  matrix_coturn_enabled: false
+
+  # ajout de la desactivation de la federation de serveur
+  # (donc il fonctionnera en stand-alone)
+  matrix_synapse_federation_enabled: false
+
+
+  B-4 ACTIVATION DE SERVICES OPTIONNELS
+  -------------------------------------
+
+  # ajout de l'option matrix-registration
+  matrix_registration_enabled: true
+
+  # utilisation du 2eme fort mot de passe pour l'option
+  matrix_registration_admin_secret: "YcJzPmifUHsMxLr0vlZko5Ms5nAOkrofeskZ419RXEOcR9RjTGG4CdVpYzR4UPh2"
+
+  # ajout de l'option synapse-admin
+  matrix_synapse_admin_enabled: true
+
+  :wq
+
+
+C - PARAMETRAGE DES HOSTS DU SERVEUR
+------------------------------------
+
+  C-1 RECHERCHE DE L'IP EXTERNE DE LA BOX
+  .......................................
+
+https://www.mon-ip.com/ -> 1.2.3.4
+
+
+  C-2 PARAMETRAGE DES HOSTS
+  .........................
+
+  # edition du fichier de parametrage
+  vi inventory/hosts
+
+    # modification de la ligne :
+matrix.<your-domain> ansible_host=<your-server's external IP address> ansible_ssh_user=root
+    # en :
+matrix.pcsol06a.solaris.com ansible_host=1.2.3.4 ansible_ssh_user=soladmin

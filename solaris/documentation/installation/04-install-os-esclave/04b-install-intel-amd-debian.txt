@@ -1,0 +1,16 @@
+
+# le but est d'avoir un pc 64 bits avec un O.S. a jour et qu'il envoie
+# automatiquement un mail de supervision de son systeme vers le mel
+# d'un administrateur
+
+# exemple de parametrage
+# ......................
+# nom complet user du pc:  Admin Matrix Solaris A
+# mot de passe user du pc: passwordusera
+# mot de passe root du pc: passwordroota
+# hostname du pc:          pcsol06a
+# adresse MAC du pc:       78:9A:BC:DE:F1:23
+# adresse IP privee du pc: 192.168.1.131
+
+# suivre les instructions decrites dans le fichier 01b-install-intel-amd-debian.txt
+# avec le nouveau parametrage

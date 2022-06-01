@@ -1,0 +1,5 @@
+
+# #####################################################################
+# ATTENTION : ne pas installer docker soi-meme docker sur debian
+# sinon le playbook ansible essaiera de le refaire lui-meme et plantera
+# #####################################################################

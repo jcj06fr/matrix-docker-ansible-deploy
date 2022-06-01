@@ -1,0 +1,194 @@
+
+# le but est d'installer le serveur sur l'ordinateur esclave, en etant pilote
+# depuis l'ordinateur maitre (c'est le but d'ansible)
+
+# exemple de parametrage
+# ......................
+# mot de passe user du pc esclave: passwordusera
+# hostname du pc maitre:           pcsol06b
+# hostname du pc esclave:          pcsol06a
+# nom de domaine du rpi esclave:   solaris.com
+# dossier du playbook pantaleev:   ansible-playbook
+
+# les phases de configuration de ce document sont decrites par pantaleev ici :
+# https://github.com/jcj06fr/matrix-docker-ansible-deploy/blob/master/docs/installing.md
+
+
+A - VERIFICATIONS PREALABLES
+----------------------------
+
+  A-1 ordinateur maitre
+  .....................
+
+# dans une fenetre terminal
+
+  # DNS correct et IP ordinateur esclave/serveur (box) atteignable
+  ping pcsol06a.solaris.com -> ok
+  ping matrix.pcsol06a.solaris.com -> ok
+  ping element.pcsol06a.solaris.com -> ok
+
+  # redirection du port 22 (ssh) vers l'ordinateur esclave
+  ssh pcsol06a.solaris.com
+    -> Passphrase for key "rsa-key-XXXXXXXX": Ceci est ma passphrase de protection 12345*$
+    -> ouverture de la session
+
+
+  A-2 ordinateur esclave
+  ......................
+
+putty/ssh pcsol06a
+
+  # initialisations des dossiers qui vont etre utilises par ansible
+  sudo mkdir -p /root/.ansible/tmp
+  sudo chmod 755 /root
+  sudo chmod 755 /root/.ansible
+  sudo chmod 777 /root/.ansible/tmp
+
+  # ###########################################################################
+  # OPTIONNEL : si vous savez le faire, faites une sauvegarde du disque
+  # systeme de l'ordinateur esclave, par exemple avec une cle usb clonezilla
+  # (cela depasse le cadre de cette installation donc on n'en parlera pas plus)
+  # ###########################################################################
+
+
+B - INSTALLATION
+----------------
+
+# elle se fait depuis l'ordinateur maitre (pcsol06b)
+# dans un terminal
+
+  # aller dans le bon dossier
+  cd ansible-playbook/matrix-docker-ansible-deploy
+
+  # lancement de l'installation du serveur
+  ansible-playbook -i inventory/hosts setup.yml --tags=setup-all --ask-become-pass
+    BECOME password: passwordusera
+    -> prend beaucoup de temps et affiche plein de lignes jusqu'a la derniere :
+       ... ok=247 changed=66 skipped=1764
+
+  # demarrage du serveur
+  ansible-playbook -i inventory/hosts setup.yml --tags=start --ask-become-pass
+    -> prend un petit moment et affiche plein de lignes jusqu'a la derniere :
+       ... ok=26 changed=2 skipped=177 -> ok
+
+  # pour le moment, le test des services de la doc est en erreur
+  ansible-playbook -i inventory/hosts setup.yml --tags=self-check --ask-become-pass
+  ...
+    # TASK [matrix-synapse : Check Matrix Federation API] en erreur
+      # mais c'est normal car on a demande de ne pas integrer le serveur dans la federation
+    # TASK [matrix-nginx-proxy : Check .well-known on the identity hostname] en erreur
+    # TASK [matrix-nginx-proxy : Fail if .well-known not working on the identity hostname] en erreur
+
+# on peut aussi tester depuis l'ordinateur esclave (pcsol06a)
+# dans un terminal
+
+  # test du service (au sens linux) matrix
+  sudo systemctl status matrix-nginx-proxy
+    -> loaded + enables + active
+
+  # pour completer l'installation de docker sur le pc esclave par ansible
+  # on va donner au user habituel (soladmin) le droit d'utiliser docker
+  sudo usermod -aG docker $USER
+  # puis terminer la session
+
+
+C - SECURISATION DE L'ORDINATEUR ESCLAVE
+----------------------------------------
+
+  C-1 ENLEVER LA REDIRECTION DU PORT 22 VERS L'ORDINATEUR ESCLAVE
+  ...............................................................
+
+# il est conseille de n'ouvrir que tres temporairement le port 22
+# depuis l'exterieur, pour reduire les risques de piratage du serveur
+
+
+    C-1-1 SUR FREEBOX
+    .................
+
+http://mafreebox.freebox.fr
+  parametres de la freebox -> gestion des ports
+    cliquer sur la poubelle associee a la redirection du port 22
+      oui
+
+
+  C-2 VERIFIER LE LOGWATCH
+  ........................
+
+# le lendemain matin, etudier le logwatch envoye par l'ordinateur esclave
+# pour verifier qu'il n'y a pas eu de login depuis internet, c.a.d. par
+# un pirate
+
+
+D - RECOMMENCER L'INSTALLATION
+------------------------------
+
+  D-1 retouches mineures
+  ----------------------
+
+  # on peut faire des retouches mineures a l'installation en relancant
+  # plusieurs fois les phases précédentes, a savoir (depuis le pc master) :
+
+  cd
+  cd ansible-playbook/matrix-docker-ansible-deploy
+
+  # arreter l'ancien serveur matrix :
+  ansible-playbook -i inventory/hosts setup.yml --tags=stop --ask-become-pass
+
+  # lancement de l'installation du serveur
+  ansible-playbook -i inventory/hosts setup.yml --tags=setup-all --ask-become-pass
+
+  # demarrage du serveur
+  ansible-playbook -i inventory/hosts setup.yml --tags=start --ask-become-pass
+
+
+  D-2 retouches majeures
+  ......................
+
+    D-2-1 nettoyage des images docker du serveur Matrix
+    ...................................................
+
+  # le plus sur, c'est de supprimer toutes les anciennes images pour revenir
+  # a l'etat initial ; pour ce faire :
+
+  # d'abord arreter l'ancien serveur matrix (depuis le pc master) :
+  cd ansible-playbook/matrix-docker-ansible-deploy
+  ansible-playbook -i inventory/hosts setup.yml --tags=stop --ask-become-pass
+
+  # puis supprimer toutes les images (depuis le pc esclave/serveur) :
+
+  # . liste des images :
+  docker images -> 3eme colonne IMAGE_ID, par exemple : 820417868176
+
+  # . suppression de l'image exemple :
+  docker rmi 820417868176
+
+  # . recommencer pour toutes les images
+
+  # . il se peut que l'image nginx pose probleme, avec le message :
+  Error response from daemon: conflict: unable to delete xxxxxxxxxxxx (must be forced) - image is referenced in multiple repositories
+  #   auquel cas on execute plutot la commande
+  docker rmi -f XXXXXXXXXXXX
+
+
+    D-2-2 pour supprimer d'autres images docker
+    ...........................................
+
+  # . liste des images :
+  docker images -> 3eme colonne IMAGE_ID, par exemple : d17025d71df5
+
+  # . suppression de l'image exemple :
+  docker rmi d17025d71df5
+    -> si jamais il y a le message d'erreur suivant :
+Error response from daemon: conflict: unable to delete d17025d71df5 (cannot be forced) - image is being used by running container 39853221f565
+    # on doit arreter le container associe :
+    docker stop 39853221f565
+    # puis relancer la suppression de l'image :
+    docker rmi d17025d71df5
+
+
+    D-2-3 restaurer la sauvegarde
+    .............................
+
+  # si vous avez fait une sauvegarde dans la phase A-2, une solution plus
+  # radicale de revenir en arriere consiste a restaurer le contenu du disque
+  # systeme juste avant l'installation ansible
