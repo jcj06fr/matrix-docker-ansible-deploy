@@ -1,0 +1,31 @@
+
+# le but est de tester la connexion au serveur de l'utilisateur de test
+# cree dans la phase 11 (synapse-admin)
+
+# exemple de parametrage
+# ......................
+# hostname du pc esclave/serveur: pcsol06a
+# nom de domaine du pc:           solaris.com
+# nom de l'admin :                adminatrix
+# mot de passe de l'admin :       matrixadm
+
+# l'installation et l'acces a l'option sont decrites par pantaleev ici :
+# https://github.com/jcj06fr/matrix-docker-ansible-deploy/blob/master/docs/configuring-playbook-synapse-admin.md
+
+# la doc de l'option est ici :
+# https://github.com/Awesome-Technologies/synapse-admin
+
+
+# connexion via l'acces web
+https://matrix.pcsol06a.solaris.com/synapse-admin/#/login
+  username: adminatrix
+  password: matrixadm
+  homeserver url: https://matrix.pcsol06a.solaris.com
+    sign in
+
+# creation d'un utilisateur standard pour les futurs tests du serveur
+users -> create
+  User-ID: test1
+  Displayname: Premier Utilisateur de Test
+  Password: 1stUser
+    Save -> ok
