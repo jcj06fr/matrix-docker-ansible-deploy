@@ -1,7 +1,16 @@
 
-# le but est d'installer le paquetage docker et ses petits sur l'ordinateur
-# esclave pour qu'il puisse faire tourner toutes les images docker
-# necessaires a la configuration matrix choisie
+# #####################################################################
+# ATTENTION : suite a l'install debian on s'est appercu que l'on ne
+# doit pas installer docker soi-meme car le playbook ansible essaiera
+# de le refaire lui-meme
+#
+# => passer directement a la phase 06-ssh-vers-esclave !!!!!!
+#
+# #####################################################################
+
+# on laisse les instructions precedentes juste pour avoir leur trace
+# au cas ou l'on en aurait besoin pour autre chose
+# mais ne pas les executer dans le cadre de l'install ansible-matrix
 
 # l'ordinateur esclave est un rpi avec un O.S. raspbian
 
@@ -17,55 +26,56 @@
 A - INSTALL DOCKER AND CO
 -------------------------
 
-putty/ssh rpisol02
+#putty/ssh rpisol02
 
   # maj de l'O.S.
-  sudo apt-get update
-  sudo apt-get upgrade
+  #sudo apt-get update
+  #sudo apt-get upgrade
 
   # creation du dossier de travail docker
-  mkdir mondocker
-  cd mondocker
+  #mkdir mondocker
+  #cd mondocker
 
   # recup du script d'install docker
-  curl -fsSL https://get.docker.com -o get-docker.sh
-  ls -> get-docker.sh -> ok
+  #curl -fsSL https://get.docker.com -o get-docker.sh
+  #ls -> get-docker.sh -> ok
 
   # verif que docker n'est pas deja installe
-  dpkg-query -l | grep docker -> rien -> ok
+  #dpkg-query -l | grep docker -> rien -> ok
 
   # install docker
-  sudo sh ./get-docker.sh -> ok
+  #sudo sh ./get-docker.sh -> ok
 
   # verif de la version
-  docker --version -> 20.10.13 -> ok
+  #docker --version -> 20.10.13 -> ok
 
-  # on avait trouve quelque part (?) le conseil d'executer la commande :
+  # dans l'ideal on devrait executer le script suivant pour que docker
+  # ne tourne pas en root mais, au vu des specificites qui vont avec,
+  # on ne prend pas de risque et on reste dans la config standard
   # dockerd-rootless-setuptool.sh install
-  # mais on la garde sous le coude pour l'instant
 
   # verif des paquetages installes
-  dpkg-query -l | grep docker
-    -> docker-ce + docker-ce-cli + docker-ce-rootless-extras
+  #dpkg-query -l | grep docker
+  #  -> docker-ce + docker-ce-cli + docker-ce-rootless-extras
 
   # ajout du user pi dans le groupe docker
-  sudo usermod -aG docker pi
+  #sudo usermod -aG docker pi
 
 
 B - TEST DOCKER EN VRAI
 -----------------------
 
   # on se reloggue pour prendre en compte le nouveau groupe du user pi
-  exit
-putty/ssh rpisol02
+  #exit
+#putty/ssh rpisol02
 
   # test de l'image helloworld
-  docker run hello-world -> ok
+  #docker run hello-world -> ok
 
   # nettoyage de l'image helloworld
-  docker ps -a -> container_id: d3dbf40f1e0f
-  docker rm d3dbf40f1e0f
-  docker rmi hello-world
+  #docker ps -a -> container_id: d3dbf40f1e0f
+  #docker rm d3dbf40f1e0f
+  #docker rmi hello-world
 
 
 C - PAS DE DOCKER-COMPOSE
