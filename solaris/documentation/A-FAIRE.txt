@@ -5,8 +5,8 @@ Liste des points a faire
       les erreurs de la doc
 
 002 - modifier les docs pour ajouter des instructions specifiques a de
-      nouvelles plateformes materielles (par ex: intel/amd, hebergeur cloud)
-      ou logicielles (par ex: debian) ou box internet ou fournisseur DNS
+      nouvelles plateformes materielles (hebergeur cloud)
+      ou box internet ou fournisseur DNS
 
 003 - ajouter des docs pour verifier le bon fonctionnement du serveur
       c.a.d. decrire l'utilisation de ses fonctionnalites :

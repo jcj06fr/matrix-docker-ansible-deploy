@@ -1,25 +1,49 @@
 
-# le but est de tester la connexion de l'administrateur au serveur
+# le but est de tester la connexion au portail de l'option
+# d'administration du serveur synapse-admin
 
 # exemple de parametrage
 # ......................
-# hostname du rpi esclave:        rpisol02
-# nom de domaine du rpi esclave:  solaris.com
-# nom de l'admin :                adminatrix
-# mot de passe de l'admin :       matrixadm
+# hostname du pc esclave/serveur:        pcsol06a
+# nom de domaine du pc:                  solaris.com
+# nom de l'admin :                       adminatrix
+# mot de passe de l'admin :              matrixadm
+# user-id de l'utilisateur de test:      test1
+# displayname de l'utilisateur de test:  Premier Utilisateur de Test
+# mot de passe de l'utilisateur de test: 1stUser
 
-# ###########
-# A COMPLETER
-# ###########
+# l'installation et l'acces a l'option sont decrites par pantaleev ici :
+# https://github.com/jcj06fr/matrix-docker-ansible-deploy/blob/master/docs/configuring-playbook-synapse-admin.md
+
+# la doc de l'option est ici :
+# https://github.com/Awesome-Technologies/synapse-admin
 
 
-A - VIA LE PORTAIL ELEMENT
---------------------------
+A - WEB ACCES
+-------------
 
-https://element.rpisol02.solaris.com
+# connexion
+https://matrix.pcsol06a.solaris.com/synapse-admin/#/login
+  username: adminatrix
+  password: matrixadm
+  homeserver url: https://matrix.pcsol06a.solaris.com
+    sign in
+
+# creation d'un utilisateur standard pour les futurs tests du serveur
+users -> create
+  User-ID: test1
+  Displayname: Premier Utilisateur de Test
+  Password: 1stUser
+    Save -> ok
+    
 
 
-B - VIA L'APPLI ELEMENT
+B - RESTREINDRE L'ACCES
 -----------------------
 
+# Comme indique dans la doc de Pantaleev, il vaudrait mieux ne pas pouvoir
+# acceder a cette option depuis internet mais plutot juste en local
+# (depuis localhost 127.0.0.1)
 
+# SI QUELQU'UN SAIT COMMENT FAIRE ... PAR EX DANS NGINX ...
+# MERCI DE LE FAIRE SAVOIR

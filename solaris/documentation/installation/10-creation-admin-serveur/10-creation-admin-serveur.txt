@@ -3,18 +3,27 @@
 
 # exemple de parametrage
 # ......................
-# hostname du rpi esclave:        rpisol02
+# hostname du pc esclave/serveur: pcsol06a
+# nom de domaine du pc:           solaris.com
 # nom de l'admin :                adminatrix
 # mot de passe de l'admin :       matrixadm
 
 # les 2 facons de creer un utilisateur sont decrites par pantaleev ici :
-# https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/registering-users.md
+# https://github.com/jcj06fr/matrix-docker-ansible-deploy/blob/master/docs/registering-users.md
 
+# dans une fenetre terminal du pc serveur pcsol06a
 
-putty/ssh rpisol02
+  # d'abord verifier que le service matrix fonctionne
+  sudo systemctl status matrix-nginx-proxy -> active -> ok
 
   # ##################################################################
   # choisissez votre nom d'administrateur ainsi que votre mot de passe
   # ##################################################################
   # creation du compte admin :
-  matrix-synapse-register-user adminatrix matrixadm 1
+  matrix-synapse-register-user adminatrix matrixadm 1 -> ok
+
+# test de connexion sur le portail element
+https://element.pcsol06a.solaris.com/#/login
+  nom d'utilisateur: adminatrix
+  mot de passe: matrixadm
+    -> ok
