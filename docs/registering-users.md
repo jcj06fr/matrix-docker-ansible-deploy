@@ -20,7 +20,7 @@ You can do it via this Ansible playbook (make sure to edit the `<your-username>`
 ansible-playbook -i inventory/hosts setup.yml --extra-vars='username=<your-username> password=<your-password> admin=<yes|no>' --tags=register-user
 ```
 
-**or** using the command-line after **SSH**-ing to your server (requires that [all services have been started](#starting-the-services)):
+**or** using the command-line after **SSH**-ing to your server (requires that [all services have been started](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/installing.md#3-starting-the-services)):
 
 ```
 /usr/local/bin/matrix-synapse-register-user <your-username> <your-password> <admin access: 0 or 1>
